@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  orders-aws-api
+
+  Sample SAM Template for orders-aws-api
+
+Globals:
+  Function:
+      Runtime: java11
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          ORDERS_TABLE: !Ref OrdersTable
+
+Resources:
+  OrdersTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties: 
+      PrimaryKey: 
+        Name: id
+        Type: Number
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: orders-aws-api
+      Handler: com.ainur.aws.serverlessapi.CreateOrderLambda::createOrder
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: POST
+
+  ReadOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: orders-aws-api
+      Handler: com.ainur.aws.serverlessapi.ReadOrderLambda::getOrders
+      Policies:
+          DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: GET
+
+Outputs:
+  CreateOrdersAPI:
+    Description: "API for CreateOrderFunction"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/orders"
+  CreateOrderFunction:
+    Description: "Create Order Function ARN"
+    Value: !GetAtt CreateOrderFunction.Arn
+  CreateOrderFunctionIamRole:
+    Description: "Create Order Function IAM Role ARN"
+    Value: !GetAtt CreateOrderFunctionRole.Arn
